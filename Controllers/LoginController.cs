@@ -14,15 +14,15 @@ namespace backend.Controllers
     {
         public static IEnumerable<User> users = new List<User>
         {   
-            new User { id = 1, username = "aselen", password = "1", name = "Alper", surname = "Selen", isActive = false },
-            new User { id = 2, username = "bselen", password = "1", name = "Balper", surname = "Selen", isActive = false },
-            new User { id = 3, username = "cselen", password = "1", name = "CAlper", surname = "Selen", isActive = false },
-            new User { id = 4, username = "dselen", password = "1", name = "DAlper", surname = "Selen", isActive = false },
-            new User { id = 5, username = "eselen", password = "1", name = "EAlper", surname = "Selen", isActive = false },
-            new User { id = 6, username = "fselen", password = "1", name = "FAlper", surname = "Selen", isActive = false },
-            new User { id = 7, username = "gselen", password = "1", name = "GAlper", surname = "Selen", isActive = false },
-            new User { id = 8, username = "hselen", password = "1", name = "HAlper", surname = "Selen", isActive = false },
-            new User { id = 9, username = "iselen", password = "1", name = "IAlper", surname = "Selen", isActive = false }
+            new User { id = 1, username = "user1", password = "1", name = "User1", surname = "User1", isActive = false },
+            new User { id = 2, username = "user2", password = "1", name = "User2", surname = "User2", isActive = false },
+            new User { id = 3, username = "user3", password = "1", name = "User3", surname = "User3", isActive = false },
+            new User { id = 4, username = "user4", password = "1", name = "User4", surname = "User4", isActive = false },
+            new User { id = 5, username = "user5", password = "1", name = "User5", surname = "User5", isActive = false },
+            new User { id = 6, username = "user6", password = "1", name = "User6", surname = "User6", isActive = false },
+            new User { id = 7, username = "user7", password = "1", name = "User7", surname = "User7", isActive = false },
+            new User { id = 8, username = "user8", password = "1", name = "User8", surname = "User8", isActive = false },
+            new User { id = 9, username = "user9", password = "1", name = "User9", surname = "User9", isActive = false }
         };
 
         private readonly ILogger<LoginController> _logger;
