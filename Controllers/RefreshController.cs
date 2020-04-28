@@ -1,7 +1,11 @@
 using System;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
+using licenseDemoNetCore;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 
 namespace backend.Controllers
@@ -21,47 +25,46 @@ namespace backend.Controllers
         [HttpGet]
         public ActionResult<User> Get(string expiredToken, string refreshToken)
         {
+            var redisManager = new RedisCacheManager();
             _logger.LogInformation("refresh istegi geldi...");
 
-            var user1 = LoginController.users.Where(u => u.id.Equals(1)).FirstOrDefault();
+            var tokens = new JwtSecurityToken(jwtEncodedString: expiredToken);
 
-            _logger.LogInformation("GELEN ISTEK");
+            var userId = tokens.Claims.First(c => c.Type == "unique_name").Value;
 
+            var session = redisManager.Get(userId);
 
-            _logger.LogInformation("expiredToken ->" + expiredToken);
-            _logger.LogInformation("refreshToken ->" + refreshToken);
-
-            _logger.LogInformation("KULLANICI");
-
-            _logger.LogInformation("KULLANICI expiredToken ->" + user1.authToken);
-            _logger.LogInformation("KULLANICI refreshToken ->" + user1.refreshToken);
-
+            if (session == null)
+                return BadRequest();
 
             var user = LoginController
                 .users
-                .Where(u => 
-                !String.IsNullOrEmpty(u.authToken) && 
-                u.authToken.Equals(expiredToken) && 
+                .Where(u =>
+                !String.IsNullOrEmpty(u.authToken) &&
+                u.authToken.Equals(expiredToken) &&
                 !String.IsNullOrEmpty(u.refreshToken) &&
                 u.refreshToken.Equals(refreshToken)).FirstOrDefault();
 
             _logger.LogInformation(user.authToken);
 
             if (user == null)
-                return NoContent();
+                return Forbid();
 
             if (user?.RefreshTokenEndDate > DateTime.Now)
             {
                 TokenHandler tokenHandler = new TokenHandler();
-                Token token = tokenHandler.CreateAccessToken();
+                Token token = tokenHandler.CreateAccessToken(user.id);
 
                 user.authToken = token.AccessToken;
                 user.authTokenExpireTime = token.Expiration;
 
+                redisManager.Remove(user.id.ToString());
+                redisManager.Set(user.id.ToString(), token.AccessToken, 60);
+
                 return user;
             }
 
-            return null;
+            return Forbid();
         }
     }
 }
