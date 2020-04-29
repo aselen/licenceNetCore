@@ -10,7 +10,7 @@ namespace backend
     public class TokenHandler
     {
         //Token üretecek metot.
-        public Token CreateAccessToken(int id)
+        public Token CreateAccessToken(long id)
         {
 
             Token tokenInstance = new Token();

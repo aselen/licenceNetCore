@@ -1,11 +1,8 @@
 using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
-using System.Security.Claims;
 using licenseDemoNetCore;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 
 namespace backend.Controllers
@@ -16,55 +13,71 @@ namespace backend.Controllers
     public class RefreshController : ControllerBase
     {
         private readonly ILogger<RefreshController> _logger;
+        private readonly UserContext _userContext;
 
-        public RefreshController(ILogger<RefreshController> logger)
+
+
+        public RefreshController(ILogger<RefreshController> logger, UserContext userContext)
         {
             _logger = logger;
+            _userContext = userContext;
         }
 
-        [HttpGet]
-        public ActionResult<User> Get(string expiredToken, string refreshToken)
+        [HttpPost]
+        public ActionResult<DtoUser> Post(Refresh refresh)
         {
-            var redisManager = new RedisCacheManager();
-            _logger.LogInformation("refresh istegi geldi...");
-
-            var tokens = new JwtSecurityToken(jwtEncodedString: expiredToken);
-
-            var userId = tokens.Claims.First(c => c.Type == "unique_name").Value;
-
-            var session = redisManager.Get(userId);
-
-            if (session == null)
-                return BadRequest();
-
-            var user = LoginController
-                .users
-                .Where(u =>
-                !String.IsNullOrEmpty(u.authToken) &&
-                u.authToken.Equals(expiredToken) &&
-                !String.IsNullOrEmpty(u.refreshToken) &&
-                u.refreshToken.Equals(refreshToken)).FirstOrDefault();
-
-            _logger.LogInformation(user.authToken);
-
-            if (user == null)
-                return Forbid();
-
-            if (user?.RefreshTokenEndDate > DateTime.Now)
+            try
             {
-                TokenHandler tokenHandler = new TokenHandler();
-                Token token = tokenHandler.CreateAccessToken(user.id);
+                var redisManager = new RedisCacheManager();
 
-                user.authToken = token.AccessToken;
-                user.authTokenExpireTime = token.Expiration;
+                _logger.LogInformation("refresh istegi geldi...");
 
-                redisManager.Remove(user.id.ToString());
-                redisManager.Set(user.id.ToString(), token.AccessToken, 60);
+                var tokens = new JwtSecurityToken(jwtEncodedString: refresh.authToken);
 
-                return user;
+                var userId = tokens.Claims.First(c => c.Type == "unique_name").Value;
+
+                var session = redisManager.Get(userId);
+
+                if (session == null)
+                    return BadRequest();
+
+                if (!refresh.authToken.Equals(session)) 
+                    return Forbid();
+
+                var user = _userContext.users.FirstOrDefault(u => u.id.Equals(long.Parse(userId)) && u.refreshtoken.Equals(refresh.refreshToken));
+
+                if (user == null)
+                    return Forbid();
+
+                if (user.refreshtokenexpirationdate > DateTime.Now)
+                {
+                    TokenHandler tokenHandler = new TokenHandler();
+                    Token token = tokenHandler.CreateAccessToken(user.id);
+
+                    user.refreshtoken = token.RefreshToken;
+
+                    _userContext.SaveChanges();
+
+                    redisManager.Remove(user.id.ToString());
+                    redisManager.Set(user.id.ToString(), token.AccessToken, 300);
+
+                    return Ok(new DtoUser
+                    {
+                        authToken = token.AccessToken,
+                        name = user.name,
+                        surname = user.surname,
+                        refreshToken = token.RefreshToken
+                    });
+                }
+
+                return Forbid();
+            }
+            catch (Exception e)
+            {
+                _logger.LogError(e.ToString());
+                return BadRequest();
             }
 
-            return Forbid();
         }
     }
 }

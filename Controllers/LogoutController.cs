@@ -20,12 +20,13 @@ namespace licenseDemoNetCore.Controllers
         }
 
         [HttpGet]
-        public ActionResult Get(string expiredToken) 
+        public ActionResult Get() 
         {
             _logger.LogInformation("logout istegi geldi...");
             var redisManager = new RedisCacheManager();
+            var expiredToken = HttpContext.Request.Headers["Authorization"];
 
-            var tokens = new JwtSecurityToken(jwtEncodedString: expiredToken);
+            var tokens = new JwtSecurityToken(jwtEncodedString: expiredToken.ToString().Split(' ')[1]);
             var userId = tokens.Claims.First(c => c.Type == "unique_name").Value;
 
             redisManager.Remove(userId);
