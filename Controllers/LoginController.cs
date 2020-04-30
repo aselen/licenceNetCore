@@ -25,29 +25,6 @@ namespace backend.Controllers
         }
 
         [AllowAnonymous]
-        [HttpGet]
-        public ActionResult<User> Get()
-        {
-            return _userContext.users.FirstOrDefault();
-        }
-
-        [AllowAnonymous]
-        [HttpPatch]
-        public ActionResult<User> Patch(long id, [FromBody] JsonPatchDocument<User> user)
-        {
-
-            var userDb = _userContext.users.FirstOrDefault(u => u.id.Equals(id));
-
-            if (userDb == null)
-                return BadRequest();
-
-            user.ApplyTo(userDb, ModelState);
-            _userContext.SaveChanges();
-
-            return Ok();
-        }
-
-        [AllowAnonymous]
         [HttpPost]
         public ActionResult<DtoUser> Post(DtoUser paramUser)
         {
